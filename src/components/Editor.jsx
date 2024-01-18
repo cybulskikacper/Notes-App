@@ -3,7 +3,7 @@ import ReactMde from "react-mde";
 import Showdown from "showdown";
 
 
-function Editor({ currentNote, updateNote }) {
+function Editor({ currentNote, updateNote }) { 
 	const [selectedTab, setSelectedTab] = React.useState('write')
 
 	const converter = new Showdown.Converter({
