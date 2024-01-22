@@ -7,6 +7,9 @@ import Editor from './components/Editor'
 
 import { nanoid } from 'nanoid'
 
+import { onSnapshot } from 'firebase/firestore'
+import { notesCollection } from '../firebase'
+
 import './App.css'
 
 function App() {
@@ -17,8 +20,13 @@ function App() {
 	const currentNote = notes.find(note => note.id === currentNoteId) || notes[0]
 
 	useEffect(() => {
-		localStorage.setItem('notes', JSON.stringify(notes))
-	}, [notes])
+		// call back fucntion
+		const unsubscribe = onSnapshot(notesCollection, function (snapshot) {
+			//  Sync up our local notes array with the snapshot data
+		})
+
+		return unsubscribe
+	}, [])
 
 	function createNewNote() {
 		const newNote = {
