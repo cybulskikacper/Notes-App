@@ -7,15 +7,17 @@ import Editor from './components/Editor'
 
 import { nanoid } from 'nanoid'
 
-import { onSnapshot } from 'firebase/firestore'
-import { notesCollection } from '../firebase'
+import { addDoc, onSnapshot, doc, deleteDoc } from 'firebase/firestore'
+import { notesCollection, db } from '../firebase'
 
 import './App.css'
 
 function App() {
 	// lazily initialization our notes, it dosent reach into localstorage on every single re-render of the app commponent
-	const [notes, setNotes] = useState(() => JSON.parse(localStorage.getItem('notes')) || [])
-	const [currentNoteId, setCurrentNoteId] = useState(notes[0]?.id || '')
+	const [notes, setNotes] = useState([])
+	const [currentNoteId, setCurrentNoteId] = useState('')
+
+	console.log(currentNoteId)
 
 	const currentNote = notes.find(note => note.id === currentNoteId) || notes[0]
 
@@ -23,18 +25,29 @@ function App() {
 		// call back fucntion
 		const unsubscribe = onSnapshot(notesCollection, function (snapshot) {
 			//  Sync up our local notes array with the snapshot data
+
+			const notesArr = snapshot.docs.map(doc => ({
+				...doc.data(),
+				id: doc.id,
+			}))
+			setNotes(notesArr)
 		})
 
 		return unsubscribe
 	}, [])
 
-	function createNewNote() {
+	useEffect(() => {
+		if (!currentNoteId) {
+			setCurrentNoteId(notes[0]?.id)
+		}
+	}, [notes])
+
+	async function createNewNote() {
 		const newNote = {
-			id: nanoid(),
 			body: "# Type your markdown note's title here",
 		}
-		setNotes(prevNotes => [newNote, ...prevNotes])
-		setCurrentNoteId(newNote.id)
+		const newNoteRef = await addDoc(notesCollection, newNote)
+		setCurrentNoteId(newNoteRef.id)
 	}
 
 	function updateNote(text) {
@@ -59,14 +72,9 @@ function App() {
 	//         : oldNote
 	// }))
 
-	function deleteNote(event, noteId) {
-		event.stopPropagation()
-		const updatedNotes = notes.filter(note => note.id !== noteId)
-		setNotes(updatedNotes)
-
-		if (currentNoteId === noteId && updatedNotes.length > 0) {
-			setCurrentNoteId(updatedNotes[0].id)
-		}
+	async function deleteNote(noteId) {
+		const docRef = doc(db, 'notes', noteId)
+		await deleteDoc(docRef)
 	}
 
 	return (
@@ -80,7 +88,7 @@ function App() {
 						newNote={createNewNote}
 						deleteNote={deleteNote}
 					/>
-					{currentNoteId && notes.length > 0 && <Editor currentNote={currentNote} updateNote={updateNote} />}
+					<Editor currentNote={currentNote} updateNote={updateNote} />
 				</Split>
 			) : (
 				<div className="no-notes">

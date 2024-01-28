@@ -1,9 +1,8 @@
 import React from 'react'
-import ReactMde from "react-mde";
-import Showdown from "showdown";
+import ReactMde from 'react-mde'
+import Showdown from 'showdown'
 
-
-function Editor({ currentNote, updateNote }) { 
+function Editor({ currentNote, updateNote }) {
 	const [selectedTab, setSelectedTab] = React.useState('write')
 
 	const converter = new Showdown.Converter({
@@ -16,7 +15,7 @@ function Editor({ currentNote, updateNote }) {
 	return (
 		<section className="pane editor">
 			<ReactMde
-				value={currentNote.body}
+				value={currentNote?.body}
 				onChange={updateNote}
 				selectedTab={selectedTab}
 				onTabChange={setSelectedTab}
