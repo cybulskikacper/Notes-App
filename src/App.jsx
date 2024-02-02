@@ -7,25 +7,22 @@ import Editor from './components/Editor'
 
 import { nanoid } from 'nanoid'
 
-import { addDoc, onSnapshot, doc, deleteDoc } from 'firebase/firestore'
+import { addDoc, onSnapshot, doc, deleteDoc, setDoc } from 'firebase/firestore'
 import { notesCollection, db } from '../firebase'
 
 import './App.css'
 
 function App() {
-	// lazily initialization our notes, it dosent reach into localstorage on every single re-render of the app commponent
 	const [notes, setNotes] = useState([])
 	const [currentNoteId, setCurrentNoteId] = useState('')
-
-	console.log(currentNoteId)
+	const [tempNoteText, setTempNoteText] = useState('')
 
 	const currentNote = notes.find(note => note.id === currentNoteId) || notes[0]
 
-	useEffect(() => {
-		// call back fucntion
-		const unsubscribe = onSnapshot(notesCollection, function (snapshot) {
-			//  Sync up our local notes array with the snapshot data
+	const sortedNotes = notes.sort((note1, note2) => note2.updatedAt - note1.updatedAt)
 
+	useEffect(() => {
+		const unsubscribe = onSnapshot(notesCollection, function (snapshot) {
 			const notesArr = snapshot.docs.map(doc => ({
 				...doc.data(),
 				id: doc.id,
@@ -45,32 +42,17 @@ function App() {
 	async function createNewNote() {
 		const newNote = {
 			body: "# Type your markdown note's title here",
+			createdAt: Date.now(),
+			updatedAt: Date.now(),
 		}
 		const newNoteRef = await addDoc(notesCollection, newNote)
 		setCurrentNoteId(newNoteRef.id)
 	}
 
-	function updateNote(text) {
-		setNotes(oldNotes => {
-			const newArray = []
-			for (let i = 0; i < oldNotes.length; i++) {
-				const oldNote = oldNotes[i]
-				if (oldNote.id === currentNoteId) {
-					newArray.unshift({ ...oldNote, body: text })
-				} else {
-					newArray.push(oldNote)
-				}
-			}
-			return newArray
-		})
+	async function updateNote(text) {
+		const docRef = doc(db, 'notes', currentNoteId)
+		await setDoc(docRef, { body: text, updatedAt: Date.now() }, { merge: true })
 	}
-
-	// This does not rearrange the notes
-	// setNotes(oldNotes => oldNotes.map(oldNote => {
-	//     return oldNote.id === currentNoteId
-	//         ? { ...oldNote, body: text }
-	//         : oldNote
-	// }))
 
 	async function deleteNote(noteId) {
 		const docRef = doc(db, 'notes', noteId)
@@ -82,7 +64,7 @@ function App() {
 			{notes.length > 0 ? (
 				<Split sizes={[30, 70]} direction="horizontal" className="split">
 					<Sidebar
-						notes={notes}
+						notes={sortedNotes}
 						currentNote={currentNote}
 						setCurrentNoteId={setCurrentNoteId}
 						newNote={createNewNote}
