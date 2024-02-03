@@ -34,10 +34,25 @@ function App() {
 	}, [])
 
 	useEffect(() => {
-		if (!currentNoteId) {
-			setCurrentNoteId(notes[0]?.id)
+		if (!tempNoteText) {
+			setTempNoteText(notes[0]?.id)
 		}
 	}, [notes])
+
+	useEffect(() => {
+		if (currentNote) {
+			setTempNoteText(currentNote.body)
+		}
+	}, [currentNote])
+
+	useEffect(() => {
+		const timeoutId = setTimeout(() => {
+			if (tempNoteText !== currentNote.body) {
+				updateNote(tempNoteText)
+			}
+		}, 500)
+		return () => clearTimeout(timeoutId)
+	}, [tempNoteText])
 
 	async function createNewNote() {
 		const newNote = {
@@ -70,7 +85,7 @@ function App() {
 						newNote={createNewNote}
 						deleteNote={deleteNote}
 					/>
-					<Editor currentNote={currentNote} updateNote={updateNote} />
+					<Editor tempNoteText={tempNoteText} setTempNoteText={setTempNoteText} />
 				</Split>
 			) : (
 				<div className="no-notes">
